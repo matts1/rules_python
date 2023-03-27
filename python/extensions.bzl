@@ -119,6 +119,18 @@ def _pip_parse_ext_attrs():
     # don't allow users to override it.
     attrs.pop("repo_prefix")
 
+    # Set the default interpreter to a bootstrapped interpreter.
+    attrs["python_interpreter_target"] = attr.label(
+        allow_single_file = True,
+        doc = """
+If you are using a custom python interpreter built by another repository rule,
+use this attribute to specify its BUILD target. This allows pip_repository to invoke
+pip using the same interpreter as your toolchain. If set, takes precedence over
+python_interpreter.
+""",
+        default = "@rules_python_bootstrap_interpreter//python/install/bin:python3"
+    )
+
     return attrs
 
 pip = module_extension(

@@ -19,6 +19,9 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("//:version.bzl", "MINIMUM_BAZEL_VERSION")
 
+_BOOTSTRAP_INTERPRETER_URL = "https://github.com/indygreg/python-build-standalone/releases/download/20221002/cpython-3.10.7+20221002-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst"
+_BOOTSTRAP_INTERPRETER_CHECKSUM = "c54217b3df5f398e52e26e16683f642b245e36232d190ee9fec45a04923de9ca"
+
 _RULE_DEPS = [
     (
         "pypi__build",
@@ -120,6 +123,18 @@ py_library(
 # Collate all the repository names so they can be easily consumed
 all_requirements = [name for (name, _, _) in _RULE_DEPS]
 
+def _python_build_standalone_interpreter_impl(repository_ctx):
+    repository_ctx.download_and_extract(
+        url = [_BOOTSTRAP_INTERPRETER_URL],
+        sha256 = _BOOTSTRAP_INTERPRETER_CHECKSUM,
+    )
+    repository_ctx.file("BUILD.bazel", "")
+    repository_ctx.file("python/install/bin/BUILD.bazel", "")
+
+python_build_standalone_interpreter = repository_rule(
+    implementation = _python_build_standalone_interpreter_impl,
+)
+
 def requirement(pkg):
     return Label("@pypi__" + pkg + "//:lib")
 
@@ -145,3 +160,7 @@ def pip_install_dependencies():
             type = "zip",
             build_file_content = _GENERIC_WHEEL,
         )
+
+    # Pip uses the system interpreter to bootstrap.
+    # We use this to ensure that we can bootstrap pip even without a python interpreter installed.
+    python_build_standalone_interpreter(name = "rules_python_bootstrap_interpreter")
