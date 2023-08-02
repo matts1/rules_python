@@ -18,6 +18,7 @@ import sys
 import unittest
 
 from lib import main
+import foo
 
 
 class ExampleTest(unittest.TestCase):
